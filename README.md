@@ -35,6 +35,25 @@ Everything is plain CSS transitions on one easing curve (`cubic-bezier(.25,1,.5,
 
 `prefers-reduced-motion` is respected.
 
+## Haptics
+
+On phones, key moments also give tactile feedback:
+
+| Moment | Pattern (ms) |
+|--------|--------------|
+| Tap: eye icon, *Create account*, new account found | `[8]` |
+| Strength → Medium | `[12]` |
+| Strength → Strong | `[12, 70, 12]` |
+| Repeat password: wrong character typed | `[14, 60, 14]` |
+| Passwords match | `[18]` |
+| Account created | `[10, 80, 10, 80, 30]` |
+
+- **Android (Chrome, Firefox):** uses the [Vibration API](https://developer.mozilla.org/docs/Web/API/Vibration_API) with the patterns above.
+- **iOS 18+ (Safari and every other iOS browser):** there is no Vibration API, so the page toggles a hidden native `<input type="checkbox" switch>`, which makes iOS play its system haptic tick. You get one light tick per pulse, and only when the tick happens during a tap or keypress. Timed events, such as *Account created*, and the second pulse of a pattern may stay silent.
+- **Desktop:** nothing happens.
+
+The helper lives at the top of `script.js` (`haptic()` and the `HAPTIC` presets).
+
 ## Stack
 
 - HTML, CSS and vanilla JS, with no build step and no dependencies
@@ -61,4 +80,3 @@ Design and code by Marat Murzagaliev.
 ## License
 
 MIT
-# passwordAnimation

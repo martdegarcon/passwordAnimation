@@ -2,6 +2,44 @@ const card = document.getElementById('card');
 const btn  = document.getElementById('btn');
 const repeatWrap = document.getElementById('repeatWrap');
 
+/* =============== HAPTICS ===============
+   Android (Chrome, Firefox): Vibration API with patterns.
+   iOS 18+ Safari: no Vibration API, but toggling a native <input type="checkbox" switch>
+   plays a system haptic tick, so we toggle a hidden one. One tick per "on" segment;
+   iOS only fires ticks that happen inside a user gesture (tap / keypress).
+   Desktop: silently does nothing. */
+const haptic = (() => {
+  const hasVibrate = typeof navigator.vibrate === 'function';
+  function tick(){
+    const id = 'hpt-' + Math.random().toString(36).slice(2);
+    const input = document.createElement('input');
+    input.type = 'checkbox'; input.id = id; input.setAttribute('switch', ''); input.tabIndex = -1;
+    const label = document.createElement('label');
+    label.htmlFor = id; label.setAttribute('aria-hidden', 'true');
+    for (const el of [input, label]) el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+    document.body.append(input, label);
+    const active = document.activeElement;
+    label.click();
+    if (active && document.activeElement !== active) active.focus({ preventScroll: true });
+    input.remove(); label.remove();
+  }
+  return pattern => {
+    try {
+      if (hasVibrate){ navigator.vibrate(pattern); return; }
+      let t = 0;
+      pattern.forEach((ms, i) => { if (i % 2 === 0) (t === 0 ? tick() : setTimeout(tick, t)); t += ms; });
+    } catch (e) { /* haptics are a nice-to-have */ }
+  };
+})();
+const HAPTIC = {
+  light:   [8],              // tap
+  step:    [12],             // strength → Medium
+  stepUp:  [12, 70, 12],     // strength → Strong
+  match:   [18],             // passwords match
+  error:   [14, 60, 14],     // passwords stopped matching
+  success: [10, 80, 10, 80, 30],
+};
+
 /* split titles into letters */
 document.querySelectorAll('.title .word').forEach(w => {
   [...w.dataset.text].forEach((c, i) => {
@@ -137,7 +175,7 @@ E.input.addEventListener('blur', () => {
 function runCheck(){
   emailState = 'checking'; setLabel(E, 'checking'); renderEmail();
   later(() => {
-    emailState = 'noacc'; setLabel(E, 'noacc');
+    emailState = 'noacc'; setLabel(E, 'noacc'); haptic(HAPTIC.light);
     later(() => { card.classList.add('signup'); updateBtn(); }, 350);
     later(() => {
       emailState = 'done'; setLabel(E, null); renderEmail();
@@ -157,8 +195,15 @@ function strength(p){
 }
 const WEIGHT = { weak:500, medium:700, strong:800 };   // Medium / Bold / ExtraBold
 
+let prevStrength = null;
+const RANK = { weak:1, medium:2, strong:3 };
 function renderPass(){
   const v = P.input.value, s = strength(v);
+  if (s && (RANK[s] || 0) > (RANK[prevStrength] || 0)){
+    if (s === 'medium') haptic(HAPTIC.step);
+    if (s === 'strong') haptic(HAPTIC.stepUp);
+  }
+  prevStrength = s;
   const w = s ? WEIGHT[s] : 400;
   P.layers.forEach(L => L.el.style.fontWeight = w);
   P.input.style.fontWeight = w;
@@ -171,12 +216,13 @@ P.input.addEventListener('focus', () => { repeatWrap.classList.add('on'); render
 P.input.addEventListener('blur', renderPass);
 P.input.addEventListener('input', renderPass);
 P.eye.addEventListener('click', e => {
-  e.preventDefault(); hidden = !hidden;
+  e.preventDefault(); hidden = !hidden; haptic(HAPTIC.light);
   P.eye.classList.toggle('hidden', hidden);
   [P,R].forEach(f => f.root.classList.toggle('masked', hidden));
 });
 
 /* =============== REPEAT =============== */
+let prevRepeat = null, prevBad = false;
 function renderRepeat(){
   const v = R.input.value, p = P.input.value;
   const s = strength(p), w = s ? WEIGHT[s] : 400;
@@ -186,6 +232,11 @@ function renderRepeat(){
   let key = null;
   if (v) key = ok ? 'match' : 'nomatch';
   else if (focused(R)) key = 'repeat';
+  if (key === 'match' && prevRepeat !== 'match') haptic(HAPTIC.match);
+  prevRepeat = key;
+  const isBad = R.badFrom !== Infinity;               // a wrong character, not just "not finished yet"
+  if (isBad && !prevBad) haptic(HAPTIC.error);
+  prevBad = isBad;
   R.layers.forEach(L => L.el.style.fontWeight = v ? w : 400);
   R.input.style.fontWeight = v ? w : 400;
   R.root.classList.toggle('bad', !!v && !ok);
@@ -206,10 +257,11 @@ function updateBtn(){
 }
 btn.addEventListener('click', () => {
   if (!btn.classList.contains('ready') || btn.dataset.s !== 'create') return;
+  haptic(HAPTIC.light);
   document.activeElement.blur();
   card.classList.add('submitting');
   btn.dataset.s = 'loading';                       // 1: label blurs out, button collapses into a circle loader
-  later(() => { btn.dataset.s = 'done'; card.classList.remove('submitting'); }, 1700);  // 2: expands, inverts, check draws
+  later(() => { btn.dataset.s = 'done'; card.classList.remove('submitting'); haptic(HAPTIC.success); }, 1700);  // 2: expands, inverts, check draws
 });
 
 document.getElementById('toSignup').addEventListener('click', () => E.input.focus());
@@ -218,7 +270,7 @@ document.getElementById('reset').addEventListener('click', reset);
 
 function reset(){
   clearAll(); clearTimeout(checkTimer);
-  emailState = 'idle'; hidden = false; E.accLen = 0; R.badFrom = Infinity;
+  emailState = 'idle'; hidden = false; E.accLen = 0; R.badFrom = Infinity; prevStrength = null; prevRepeat = null; prevBad = false;
   document.activeElement.blur();
   P.eye.classList.remove('hidden');
   FIELDS.forEach(f => {
