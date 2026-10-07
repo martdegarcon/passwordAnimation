@@ -3,34 +3,28 @@ const btn  = document.getElementById('btn');
 const repeatWrap = document.getElementById('repeatWrap');
 
 /* =============== HAPTICS ===============
-   Android (Chrome, Firefox): Vibration API with patterns.
-   iOS 18+ Safari: no Vibration API, but toggling a native <input type="checkbox" switch>
-   plays a system haptic tick, so we toggle a hidden one. One tick per "on" segment;
-   iOS only fires ticks that happen inside a user gesture (tap / keypress).
-   Desktop: silently does nothing. */
-const haptic = (() => {
-  const hasVibrate = typeof navigator.vibrate === 'function';
-  // same technique as the ios-haptics library: a hidden label wrapping a native switch, clicked once
-  function tick(){
-    const label = document.createElement('label');
-    label.setAttribute('aria-hidden', 'true');
-    label.style.display = 'none';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.setAttribute('switch', '');
-    label.appendChild(input);
-    document.head.appendChild(label);
-    label.click();
-    label.remove();
-  }
-  return pattern => {
-    try {
-      if (hasVibrate){ navigator.vibrate(pattern); return; }
-      let t = 0;
-      pattern.forEach((ms, i) => { if (i % 2 === 0) (t === 0 ? tick() : setTimeout(tick, t)); t += ms; });
-    } catch (e) { /* haptics are a nice-to-have */ }
-  };
-})();
+   Android (Chrome, Firefox): Vibration API with patterns — works for every event.
+   iPhone: Safari has no Vibration API. Since iOS 26.5 the only way to get the system
+   haptic tick from a web page is a finger tapping a real native <input type="checkbox" switch>.
+   So on iPhone we lay an invisible native switch over the tappable controls (eye icon,
+   main button). Events that are not a direct tap (typing, timers) can't vibrate there.
+   Desktop: nothing happens. */
+const HAS_VIBRATE = typeof navigator.vibrate === 'function';
+const IOS_TAP_HAPTICS = !HAS_VIBRATE && matchMedia('(pointer: coarse)').matches;
+
+const haptic = pattern => { try { if (HAS_VIBRATE) navigator.vibrate(pattern); } catch (e) {} };
+
+function addTapHaptics(container){
+  if (!IOS_TAP_HAPTICS) return null;
+  const sw = document.createElement('input');
+  sw.type = 'checkbox';
+  sw.setAttribute('switch', '');
+  sw.className = 'haptic-switch';
+  sw.tabIndex = -1;
+  sw.setAttribute('aria-hidden', 'true');
+  container.appendChild(sw);
+  return sw;
+}
 const HAPTIC = {
   light:   [25],                   // tap
   step:    [35],                   // strength → Medium
@@ -215,10 +209,18 @@ function renderPass(){
 P.input.addEventListener('focus', () => { repeatWrap.classList.add('on'); renderPass(); });
 P.input.addEventListener('blur', renderPass);
 P.input.addEventListener('input', renderPass);
-P.eye.addEventListener('click', e => {
-  e.preventDefault(); hidden = !hidden; haptic(HAPTIC.light);
+function toggleEye(){
+  hidden = !hidden; haptic(HAPTIC.light);
   P.eye.classList.toggle('hidden', hidden);
   [P,R].forEach(f => f.root.classList.toggle('masked', hidden));
+}
+addTapHaptics(P.eye);
+P.eye.addEventListener('click', e => {
+  if (!e.target.classList.contains('haptic-switch')) e.preventDefault();   // stop the <label> from focusing the input
+  toggleEye();
+});
+P.eye.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleEye(); }
 });
 
 /* =============== REPEAT =============== */
@@ -255,14 +257,21 @@ function updateBtn(){
   const p = P.input.value, s = strength(p);
   btn.classList.toggle('ready', isSignup() && emailState === 'done' && !!s && s !== 'weak' && R.input.value === p);
 }
-btn.addEventListener('click', () => {
+const syncTappable = () => document.getElementById('btnWrap')
+  .classList.toggle('tappable', btn.classList.contains('ready') && btn.dataset.s === 'create');
+new MutationObserver(syncTappable).observe(btn, { attributes: true, attributeFilter: ['class', 'data-s'] });
+const btnWrap = document.getElementById('btnWrap');
+const btnSwitch = addTapHaptics(btnWrap);
+if (btnSwitch) btnSwitch.addEventListener('click', submit);
+btn.addEventListener('click', submit);
+function submit(){
   if (!btn.classList.contains('ready') || btn.dataset.s !== 'create') return;
   haptic(HAPTIC.light);
   document.activeElement.blur();
   card.classList.add('submitting');
   btn.dataset.s = 'loading';                       // 1: label blurs out, button collapses into a circle loader
   later(() => { btn.dataset.s = 'done'; card.classList.remove('submitting'); haptic(HAPTIC.success); }, 1700);  // 2: expands, inverts, check draws
-});
+}
 
 document.getElementById('toSignup').addEventListener('click', () => E.input.focus());
 document.getElementById('toLogin').addEventListener('click', reset);
