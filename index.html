@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Password Weight — sign-up flow</title>
+<meta name="description" content="Sign-up flow concept where password strength is shown through font weight.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main class="card" id="card">
+  <div class="title-wrap">
+    <h1 class="title" aria-live="polite"><span class="word w-login" data-text="Log in"></span><span class="word w-signup" data-text="Sign up"></span></h1>
+    <p class="sub">No account for this email yet —<br>let’s <b>create one</b></p>
+  </div>
+
+  <div class="fields">
+    <!-- EMAIL -->
+    <label class="field mid" id="email" data-base="email">
+      <span class="lbl">
+        <span data-k="email" class="on">Email</span>
+        <span data-k="checking"><svg class="spin" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="3" r="1.8"/><circle cx="18.4" cy="5.6" r="1.6" opacity=".9"/><circle cx="21" cy="12" r="1.5" opacity=".8"/><circle cx="18.4" cy="18.4" r="1.4" opacity=".65"/><circle cx="12" cy="21" r="1.3" opacity=".5"/><circle cx="5.6" cy="18.4" r="1.2" opacity=".4"/><circle cx="3" cy="12" r="1.1" opacity=".3"/><circle cx="5.6" cy="5.6" r="1" opacity=".2"/></svg>Checking</span>
+        <span data-k="noacc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>New account</span>
+      </span>
+      <span class="mirror"><span class="vals">
+        <span class="layer plain"><span class="pre"></span><span class="acc"></span><i class="caret"></i><span class="post"></span><span class="ghost"></span></span>
+      </span></span>
+      <input type="text" inputmode="email" autocapitalize="off" autocomplete="off" spellcheck="false" aria-label="Email">
+    </label>
+
+    <!-- PASSWORD -->
+    <label class="field mid" id="pass" data-base="password">
+      <span class="lbl">
+        <span data-k="password" class="on">Password</span>
+        <span data-k="weak">Weak</span>
+        <span data-k="medium">Medium</span>
+        <span data-k="strong">Strong</span>
+      </span>
+      <span class="mirror"><span class="vals">
+        <span class="layer plain"></span>
+        <span class="layer mask"></span>
+      </span></span>
+      <input type="text" autocomplete="new-password" spellcheck="false" autocapitalize="off" aria-label="Password">
+      <button class="eye" type="button" aria-label="Show or hide password">
+        <svg class="open" viewBox="0 0 24 24" fill="currentColor"><path d="M9.75 12a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0Z"/><path fill-rule="evenodd" d="M2 12c0 1.64.425 2.191 1.275 3.296C4.972 17.5 7.818 20 12 20s7.028-2.5 8.725-4.704C21.575 14.19 22 13.639 22 12c0-1.64-.425-2.191-1.275-3.296C19.028 6.5 16.182 4 12 4S4.972 6.5 3.275 8.704C2.425 9.81 2 10.361 2 12Zm10-3.75a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z" clip-rule="evenodd"/></svg>
+        <svg class="shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9.5c2.2 3 5.3 4.5 9 4.5s6.8-1.5 9-4.5"/><path d="M12 14v3M7.2 12.8l-1.6 2.6M16.8 12.8l1.6 2.6M3.8 10.6 2 12.4M20.2 10.6l1.8 1.8"/></svg>
+      </button>
+    </label>
+
+    <!-- REPEAT -->
+    <div class="reveal" id="repeatWrap">
+      <label class="field mid" id="repeat" data-base="repeat">
+        <span class="lbl">
+          <span data-k="repeat" class="on">Repeat password</span>
+          <span data-k="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Passwords match</span>
+          <span data-k="nomatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg>Passwords don’t match</span>
+        </span>
+        <span class="mirror"><span class="vals">
+          <span class="layer plain"></span>
+          <span class="layer mask"></span>
+        </span></span>
+        <input type="text" autocomplete="new-password" spellcheck="false" autocapitalize="off" aria-label="Repeat password">
+      </label>
+    </div>
+  </div>
+
+  <button class="btn" id="btn" type="button" data-s="continue">
+    <span class="lab l-continue">Continue</span>
+    <span class="lab l-create">Create account</span>
+    <span class="lab l-done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Account created</span>
+    <svg class="ring" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10"/></svg>
+  </button>
+
+  <div class="links">
+    <div class="swap">
+      <p class="s-signup">Don’t have an account? <a id="toSignup">Sign up</a></p>
+      <p class="s-login">Already have an account? <a id="toLogin">Log in</a></p>
+    </div>
+    <a>Forgot password</a>
+  </div>
+</main>
+
+<button class="reset" id="reset" type="button">Reset</button>
+
+<script src="script.js"></script>
+</body>
+</html>
