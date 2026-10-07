@@ -10,18 +10,18 @@ const repeatWrap = document.getElementById('repeatWrap');
    Desktop: silently does nothing. */
 const haptic = (() => {
   const hasVibrate = typeof navigator.vibrate === 'function';
+  // same technique as the ios-haptics library: a hidden label wrapping a native switch, clicked once
   function tick(){
-    const id = 'hpt-' + Math.random().toString(36).slice(2);
-    const input = document.createElement('input');
-    input.type = 'checkbox'; input.id = id; input.setAttribute('switch', ''); input.tabIndex = -1;
     const label = document.createElement('label');
-    label.htmlFor = id; label.setAttribute('aria-hidden', 'true');
-    for (const el of [input, label]) el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
-    document.body.append(input, label);
-    const active = document.activeElement;
+    label.setAttribute('aria-hidden', 'true');
+    label.style.display = 'none';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('switch', '');
+    label.appendChild(input);
+    document.head.appendChild(label);
     label.click();
-    if (active && document.activeElement !== active) active.focus({ preventScroll: true });
-    input.remove(); label.remove();
+    label.remove();
   }
   return pattern => {
     try {
@@ -32,12 +32,12 @@ const haptic = (() => {
   };
 })();
 const HAPTIC = {
-  light:   [8],              // tap
-  step:    [12],             // strength → Medium
-  stepUp:  [12, 70, 12],     // strength → Strong
-  match:   [18],             // passwords match
-  error:   [14, 60, 14],     // passwords stopped matching
-  success: [10, 80, 10, 80, 30],
+  light:   [25],                   // tap
+  step:    [35],                   // strength → Medium
+  stepUp:  [35, 90, 35],           // strength → Strong
+  match:   [45],                   // passwords match
+  error:   [30, 70, 30],           // passwords stopped matching
+  success: [30, 100, 30, 100, 60],
 };
 
 /* split titles into letters */
